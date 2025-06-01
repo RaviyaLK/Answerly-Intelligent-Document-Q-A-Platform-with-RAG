@@ -39,3 +39,39 @@ CI/CD: GitHub Actions
 Deployment: Docker, AWS SageMaker
 
 Database: Snowflake
+
+📂 Project Structure
+├── backend/
+│   ├── main.py
+│   ├── ingestion.py
+│   ├── embedding.py
+│   ├── qa_pipeline.py
+│   └── requirements.txt
+├── frontend/
+│   └── (Next.js app files)
+├── data/
+│   ├── sample_pdfs/
+│   └── chunked_data.json
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml
+├── Dockerfile
+├── README.md
+
+
+🧪 Getting Started
+1. Clone the repository:
+git clone https://github.com/yourusername/rag-qa-platform.git
+cd rag-qa-platform
+
+2. Set up the backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+3. Set up the frontend:
+cd frontend
+npm install
+npm run dev
+
+📸 Screenshots
