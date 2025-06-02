@@ -61,7 +61,7 @@ Database: Snowflake
 
 🧪 Getting Started
 1. Clone the repository:
-git clone https://github.com/yourusername/rag-qa-platform.git
+git clone https://github.com/RaviyaLK/Intelligent-Document-Q-A-Platform-with-RAG
 cd rag-qa-platform
 
 2. Set up the backend
