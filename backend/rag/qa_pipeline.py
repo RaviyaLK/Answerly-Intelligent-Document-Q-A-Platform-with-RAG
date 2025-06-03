@@ -1,3 +1,4 @@
+# qa_pipline.py
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
@@ -5,12 +6,14 @@ import json
 import requests
 import os
 from dotenv import load_dotenv
+from pymongo import MongoClient
+from embedding.embed_store import load_embeddings_from_mongodb
 
 load_dotenv()
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-HUGGINGFACE_API_KEY = os.getenv("HF_API_KEY") 
+HUGGINGFACE_API_KEY = os.getenv("HF_API_KEY")
 API_URL = "https://router.huggingface.co/novita/v3/openai/chat/completions"
 HEADERS = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
 
@@ -21,9 +24,19 @@ def load_chunks(path="data/chunks.json"):
     with open(path, "r") as f:
         return json.load(f)
 
-def retrieve_context(query, k=5):
+# ----------- For single PDF mode (local FAISS) ------------
+def retrieve_context_single(query, k=5):
     index = load_index()
     chunks = load_chunks()
+    query_vec = model.encode([query])
+    _, I = index.search(np.array(query_vec), k)
+    return [chunks[i] for i in I[0]]
+
+# ----------- For multiple PDF mode (MongoDB) --------------
+def retrieve_context_multi(user_id: str, collection_name: str, query: str, k=5):
+    chunks, embeddings = load_embeddings_from_mongodb(user_id, collection_name)
+    index = faiss.IndexFlatL2(embeddings.shape[1])
+    index.add(embeddings)
     query_vec = model.encode([query])
     _, I = index.search(np.array(query_vec), k)
     return [chunks[i] for i in I[0]]
@@ -32,14 +45,8 @@ def query_deepseek_chat_model(prompt: str):
     payload = {
         "model": "deepseek/deepseek-v3-0324",
         "messages": [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that only uses the provided context to answer questions."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "system", "content": "You are a helpful assistant that only uses the provided context to answer questions."},
+            {"role": "user", "content": prompt}
         ]
     }
 

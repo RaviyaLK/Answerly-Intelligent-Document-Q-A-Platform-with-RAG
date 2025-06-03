@@ -1,4 +1,4 @@
-# ingestion/pdf_loader.py
+# pdf_loader.py
 import fitz  # PyMuPDF
 
 def extract_text_from_pdf(file_path):

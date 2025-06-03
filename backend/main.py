@@ -1,26 +1,113 @@
 # main.py
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
+from auth.auth_utils import (
+    get_password_hash,
+    authenticate_user,
+    create_access_token,
+    get_current_user,
+    get_user,
+    users_collection
+)
 from ingestion.pdf_loader import extract_text_from_pdf
 from chunking.text_chunker import chunk_text
-from embedding.embed_store import embed_chunks, save_faiss_index
-from rag.qa_pipeline import retrieve_context, generate_answer
+from embedding.embed_store import (
+    embed_chunks,
+    save_faiss_index,
+    store_pdf_chunks_for_user,
+load_embeddings_from_mongodb    
+)
+from rag.qa_pipeline import generate_answer, retrieve_context_single, retrieve_context_multi
+from db.db import create_collection_for_user
+from fastapi.security import OAuth2PasswordRequestForm
+import os
 
 app = FastAPI()
 
-@app.post("/upload_pdf/")
-async def upload_pdf(file: UploadFile = File(...)):
-    contents = await file.read()
-    with open("temp.pdf", "wb") as f:
-        f.write(contents)
+# CORS for local dev
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    text = extract_text_from_pdf("temp.pdf")
+class QARequest(BaseModel):
+    question: str
+    mode: str  # "single" or "multi"
+    collection_name: Optional[str] = None
+
+@app.post("/register")
+def register(username: str = Form(...), password: str = Form(...)):
+    if get_user(username):
+        raise HTTPException(status_code=400, detail="Username already exists")
+    users_collection.insert_one({
+        "username": username,
+        "hashed_password": get_password_hash(password)
+    })
+    return {"message": "User registered successfully"}
+
+@app.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_access_token(data={"sub": user["username"]})
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/upload/single/")
+def upload_single_pdf(file: UploadFile = File(...)):
+    contents = file.file.read()
+    file_path = f"temp/{file.filename}"
+    os.makedirs("temp", exist_ok=True)
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    text = extract_text_from_pdf(file_path)
     chunks = chunk_text(text)
     embeddings = embed_chunks(chunks)
     save_faiss_index(embeddings, chunks)
-    return {"message": "PDF processed and indexed."}
+    return {"message": "PDF processed and saved for single mode."}
 
-@app.post("/ask/")
-async def ask_question(question: str):
-    context = retrieve_context(question)
-    answer = generate_answer(question, context)
+@app.post("/upload/multi/")
+def upload_multi_pdf(
+    collection_name: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    contents = file.file.read()
+    file_path = f"temp/{file.filename}"
+    os.makedirs("temp", exist_ok=True)
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    text = extract_text_from_pdf(file_path)
+    chunks = chunk_text(text)
+    embeddings = embed_chunks(chunks)
+
+    user_id = str(current_user["_id"])
+    store_pdf_chunks_for_user(user_id, collection_name, chunks, embeddings)
+    return {"message": "PDF uploaded and stored in MongoDB for multi mode."}
+
+@app.post("/qa/")
+def ask_question(data: QARequest, current_user: dict = Depends(get_current_user)):
+    if data.mode == "multi":
+        if not data.collection_name:
+            raise HTTPException(status_code=400, detail="Collection name required for multi mode")
+        user_id = str(current_user["_id"])
+        context_chunks =  retrieve_context_multi(user_id, data.collection_name, data.question)
+    else:
+     context_chunks = retrieve_context_single(data.question)
+
+    answer = generate_answer(data.question, context_chunks)
     return {"answer": answer}
+
+
+@app.post("/create-collection/")
+def create_collection(collection_name: str = Form(...), current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    create_collection_for_user(user_id, collection_name)
+    return {"message": f"Collection '{collection_name}' created for user."}
