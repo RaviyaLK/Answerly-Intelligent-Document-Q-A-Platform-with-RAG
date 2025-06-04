@@ -47,7 +47,7 @@ def get_chunks_and_embeddings_for_user(user_id: str, collection_name: str):
     if not results:
         return [], np.array([])
 
-    # Note: Expecting chunks and embeddings to be stored as lists
+   
     chunks = []
     embeddings = []
 

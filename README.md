@@ -38,25 +38,7 @@ CI/CD: GitHub Actions
 
 Deployment: Docker, AWS SageMaker
 
-Database: Snowflake
-
-📂 Project Structure
-├── backend/
-│   ├── main.py
-│   ├── ingestion.py
-│   ├── embedding.py
-│   ├── qa_pipeline.py
-│   └── requirements.txt
-├── frontend/
-│   └── (Next.js app files)
-├── data/
-│   ├── sample_pdfs/
-│   └── chunked_data.json
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml
-├── Dockerfile
-├── README.md
+Database: MongoDB
 
 
 🧪 Getting Started
@@ -75,3 +57,4 @@ npm install
 npm run dev
 
 📸 Screenshots
+

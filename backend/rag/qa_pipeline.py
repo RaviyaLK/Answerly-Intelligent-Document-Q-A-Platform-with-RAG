@@ -41,6 +41,9 @@ def retrieve_context_multi(user_id: str, collection_name: str, query: str, k=5):
     _, I = index.search(np.array(query_vec), k)
     return [chunks[i] for i in I[0]]
 
+
+# ----------- Sending query to the deepseek chat model --------------
+
 def query_deepseek_chat_model(prompt: str):
     payload = {
         "model": "deepseek/deepseek-v3-0324",
@@ -58,7 +61,7 @@ def query_deepseek_chat_model(prompt: str):
     except Exception as e:
         print(f"API error: {e}, Response: {getattr(e.response, 'text', 'No response text')}")
         return "Error fetching answer from DeepSeek model."
-
+# ----------- Generating answers based on the question and the chunks --------------
 def generate_answer(question, context_chunks):
     context = "\n".join(context_chunks)
     prompt = f"Answer the question based only on the context.\n\nContext:\n{context}\n\nQuestion: {question}\nAnswer:"
