@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Answerly - Chat with PDFs</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 300px;
+        background: #1a1a2e;
+        color: white;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .logo::before {
+        content: "📄";
+        margin-right: 10px;
+      }
+
+      .upload-section {
+        margin-bottom: 30px;
+      }
+
+      .upload-btn {
+        width: 100%;
+        padding: 12px;
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 15px;
+        transition: background 0.3s;
+      }
+
+      .upload-btn:hover {
+        background: #7c3aed;
+      }
+
+      .new-collection-btn {
+        width: 100%;
+        padding: 12px;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 15px;
+        transition: background 0.3s;
+      }
+
+      .new-collection-btn:hover {
+        background: #059669;
+      }
+
+      .pdf-list {
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      .pdf-item {
+        background: #2d2d4a;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .pdf-item:hover {
+        background: #3d3d5a;
+      }
+
+      .pdf-item.active {
+        background: #8b5cf6;
+      }
+
+      .collection-item {
+        background: #2d2d4a;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .collection-item:hover {
+        background: #3d3d5a;
+      }
+
+      .collection-item.active {
+        background: #10b981;
+      }
+
+      .auth-section {
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid #3d3d5a;
+      }
+
+      .auth-btn {
+        width: 100%;
+        padding: 12px;
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 10px;
+        transition: background 0.3s;
+      }
+
+      .auth-btn:hover {
+        background: #7c3aed;
+      }
+
+      .login-message {
+        background: #fef3c7;
+        color: #d97706;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 15px;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+        margin: 20px;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      /* Welcome Screen */
+      .welcome-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        padding: 40px;
+      }
+
+      .welcome-title {
+        font-size: 48px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #1a1a2e;
+      }
+
+      .welcome-subtitle {
+        font-size: 18px;
+        color: #666;
+        margin-bottom: 40px;
+        max-width: 600px;
+      }
+
+      .upload-area {
+        width: 100%;
+        max-width: 600px;
+        height: 300px;
+        border: 2px dashed #8b5cf6;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .upload-area:hover {
+        border-color: #7c3aed;
+        background: #f8fafc;
+      }
+
+      .upload-area.dragover {
+        border-color: #7c3aed;
+        background: #f1f5f9;
+      }
+
+      .upload-icon {
+        font-size: 48px;
+        color: #8b5cf6;
+        margin-bottom: 20px;
+      }
+
+      .upload-text {
+        font-size: 18px;
+        color: #1a1a2e;
+        margin-bottom: 10px;
+      }
+
+      .upload-subtext {
+        font-size: 14px;
+        color: #666;
+      }
+
+      .upload-button {
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: background 0.3s;
+      }
+
+      .upload-button:hover {
+        background: #7c3aed;
+      }
+
+      /* Chat Interface */
+      .chat-interface {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .chat-header {
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f8fafc;
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: #f8fafc;
+      }
+
+      .message {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .message.user {
+        justify-content: flex-end;
+      }
+
+      .message-content {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        word-wrap: break-word;
+      }
+
+      .message.user .message-content {
+        background: #8b5cf6;
+        color: white;
+      }
+
+      .message.ai .message-content {
+        background: white;
+        color: #1a1a2e;
+        border: 1px solid #e5e7eb;
+      }
+
+      .chat-input-container {
+        padding: 20px;
+        border-top: 1px solid #e5e7eb;
+        background: white;
+      }
+
+      .chat-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 24px;
+        outline: none;
+        font-size: 16px;
+        resize: none;
+        min-height: 48px;
+        max-height: 120px;
+      }
+
+      .chat-input:focus {
+        border-color: #8b5cf6;
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background: white;
+        margin: 15% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 400px;
+        position: relative;
+      }
+
+      .close {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #999;
+      }
+
+      .close:hover {
+        color: #333;
+      }
+
+      .modal h2 {
+        margin-bottom: 20px;
+        color: #1a1a2e;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #1a1a2e;
+        font-weight: 500;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+      }
+
+      .form-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s;
+      }
+
+      .btn-primary {
+        background: #8b5cf6;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #7c3aed;
+      }
+
+      .btn-secondary {
+        background: #e5e7eb;
+        color: #1a1a2e;
+      }
+
+      .btn-secondary:hover {
+        background: #d1d5db;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .error {
+        color: #dc2626;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      .success {
+        color: #059669;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        body {
+          flex-direction: column;
+        }
+
+        .sidebar {
+          width: 100%;
+          height: auto;
+          padding: 15px;
+        }
+
+        .main-content {
+          margin: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo">Answerly</div>
+
+      <div class="upload-section">
+        <button
+          class="upload-btn"
+          onclick="document.getElementById('fileInput').click()"
+        >
+          📄 Upload PDF
+        </button>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".pdf"
+          style="display: none"
+          onchange="handleFileUpload(event)"
+        />
+
+        <button
+          class="new-collection-btn hidden"
+          id="newCollectionBtn"
+          onclick="showNewCollectionModal()"
+        >
+          📁 New Collection
+        </button>
+      </div>
+
+      <div class="login-message" id="loginMessage">
+        💡 Login to upload multiple PDFs and create collections
+      </div>
+
+      <div class="pdf-list" id="pdfList">
+        <!-- PDFs and Collections will be listed here -->
+      </div>
+
+      <div class="auth-section">
+        <button class="auth-btn" id="authBtn" onclick="showAuthModal()">
+          Sign In
+        </button>
+        <div class="hidden" id="userInfo">
+          <p>Welcome, <span id="username"></span>!</p>
+          <button class="auth-btn" onclick="logout()">Sign Out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Welcome Screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <h1 class="welcome-title">
+          Chat with any <span style="color: #8b5cf6">PDF</span>
+        </h1>
+        <p class="welcome-subtitle">
+          Answerly lets you upload PDFs and chat with them instantly. Whether you're a student, researcher, or professional, simply ask questions and get accurate answers based on the document content, no more endless scrolling or manual reading!
+        </p>
+
+        <div
+          class="upload-area"
+          id="uploadArea"
+          onclick="document.getElementById('fileInput').click()"
+        >
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Click to upload, or drag PDF here</div>
+          <div class="upload-subtext">Supports PDF files up to 25MB</div>
+          <button class="upload-button">Upload PDF</button>
+        </div>
+      </div>
+
+      <!-- Chat Interface -->
+      <div class="chat-interface" id="chatInterface">
+        <div class="chat-header">
+          <h2 id="chatTitle">Chat with your PDF</h2>
+          <p id="chatSubtitle">Ask questions about your document</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages will be displayed here -->
+        </div>
+
+        <div class="chat-input-container">
+          <textarea
+            class="chat-input"
+            id="chatInput"
+            placeholder="Ask a question about your PDF..."
+            onkeypress="handleKeyPress(event)"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal" id="authModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeAuthModal()">&times;</span>
+        <h2 id="authTitle">Sign In</h2>
+        <form id="authForm">
+          <div class="form-group">
+            <label for="authUsername">Username</label>
+            <input type="text" id="authUsername" required />
+          </div>
+          <div class="form-group">
+            <label for="authPassword">Password</label>
+            <input type="password" id="authPassword" required />
+          </div>
+          <div class="error" id="authError"></div>
+          <div class="success" id="authSuccess"></div>
+          <div class="form-buttons">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeAuthModal()"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" id="authSubmit">
+              Sign In
+            </button>
+          </div>
+        </form>
+        <p style="margin-top: 15px; text-align: center; color: #666">
+          <span id="authSwitchText">Don't have an account?</span>
+          <a href="#" onclick="switchAuthMode()" style="color: #8b5cf6"
+            >Sign Up</a
+          >
+        </p>
+      </div>
+    </div>
+
+    <!-- New Collection Modal -->
+    <div class="modal" id="collectionModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeCollectionModal()">&times;</span>
+        <h2>Create New Collection</h2>
+        <form id="collectionForm">
+          <div class="form-group">
+            <label for="collectionName">Collection Name</label>
+            <input type="text" id="collectionName" required />
+          </div>
+          <div class="error" id="collectionError"></div>
+          <div class="success" id="collectionSuccess"></div>
+          <div class="form-buttons">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeCollectionModal()"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Create Collection
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let currentUser = null;
+      let currentMode = "single";
+      let currentCollection = null;
+      let currentPDF = null;
+      let isAuthMode = "login";
+
+      const API_BASE_URL = "http://localhost:8001";
+
+      // Initialize app
+      document.addEventListener("DOMContentLoaded", function () {
+        checkAuthStatus();
+        setupDragAndDrop();
+      });
+
+      // Check if user is already authenticated
+      function checkAuthStatus() {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          // Verify token validity (optional)
+          currentUser = { token: token };
+          updateUIForLoggedInUser();
+        }
+      }
+
+      // Setup drag and drop
+      function setupDragAndDrop() {
+        const uploadArea = document.getElementById("uploadArea");
+
+        uploadArea.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          uploadArea.classList.add("dragover");
+        });
+
+        uploadArea.addEventListener("dragleave", function (e) {
+          e.preventDefault();
+          uploadArea.classList.remove("dragover");
+        });
+
+        uploadArea.addEventListener("drop", function (e) {
+          e.preventDefault();
+          uploadArea.classList.remove("dragover");
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            handleFileUpload({ target: { files: files } });
+          }
+        });
+      }
+
+      // Handle file upload
+      async function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== "application/pdf") {
+          alert("Please upload a PDF file");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          showLoading();
+
+          let endpoint;
+          if (currentMode === "single") {
+            endpoint = `${API_BASE_URL}/upload/single/`;
+          } else {
+            if (!currentCollection) {
+              alert("Please select a collection first");
+              return;
+            }
+            endpoint = `${API_BASE_URL}/upload/multi/`;
+            formData.append("collection_name", currentCollection);
+          }
+
+          const headers = {};
+          if (currentUser && currentMode === "multi") {
+            headers.Authorization = `Bearer ${currentUser.token}`;
+          }
+
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: headers,
+            body: formData,
+          });
+          console.log("Upload response status:", response.status);
+          console.log("Upload response headers:", response.headers);
+
+          if (response.ok) {
+            const result = await response.json();
+            currentPDF = file.name;
+            updatePDFList();
+            showChatInterface();
+            addMessage(
+              "ai",
+              "PDF uploaded successfully! You can now ask questions about your document."
+            );
+          } else {
+            const error = await response.json();
+            console.error("Upload failed:", error);
+            alert(`Upload failed: ${error.detail || "Unknown error"}`);
+          }
+        } catch (error) {
+          console.error("Upload error:", error);
+          alert("Upload failed. Please try again.");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // Show chat interface
+      function showChatInterface() {
+        document.getElementById("welcomeScreen").style.display = "none";
+        document.getElementById("chatInterface").style.display = "flex";
+
+        const title = document.getElementById("chatTitle");
+        const subtitle = document.getElementById("chatSubtitle");
+
+        if (currentMode === "single") {
+          title.textContent = `Chat with ${currentPDF}`;
+          subtitle.textContent = "Ask questions about your document";
+        } else {
+          title.textContent = `Chat with Collection: ${currentCollection}`;
+          subtitle.textContent = "Ask questions about your documents";
+        }
+      }
+
+      // Add message to chat
+      function addMessage(sender, message) {
+        const messagesContainer = document.getElementById("chatMessages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}`;
+
+        const messageContent = document.createElement("div");
+        messageContent.className = "message-content";
+        messageContent.textContent = message;
+
+        messageDiv.appendChild(messageContent);
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      // Handle key press in chat input
+      function handleKeyPress(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      }
+
+      // Send message
+      async function sendMessage() {
+        const input = document.getElementById("chatInput");
+        const message = input.value.trim();
+        if (!message) return;
+
+        input.value = "";
+        addMessage("user", message);
+
+        try {
+          const requestData = {
+            question: message,
+            mode: currentMode,
+          };
+
+          if (currentMode === "multi") {
+            requestData.collection_name = currentCollection;
+          }
+
+          const headers = {
+            "Content-Type": "application/json",
+          };
+
+          if (currentUser) {
+            headers.Authorization = `Bearer ${currentUser.token}`;
+          }
+
+          const response = await fetch(`${API_BASE_URL}/qa/`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(requestData),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            addMessage("ai", result.answer);
+          } else {
+            const error = await response.json();
+            addMessage(
+              "ai",
+              `Error: ${error.detail || "Something went wrong"}`
+            );
+          }
+        } catch (error) {
+          console.error("Send message error:", error);
+          addMessage(
+            "ai",
+            "Error: Unable to process your question. Please try again."
+          );
+        }
+      }
+
+      // Show auth modal
+      function showAuthModal() {
+        document.getElementById("authModal").style.display = "block";
+      }
+
+      // Close auth modal
+      function closeAuthModal() {
+        document.getElementById("authModal").style.display = "none";
+        document.getElementById("authError").textContent = "";
+        document.getElementById("authSuccess").textContent = "";
+        document.getElementById("authForm").reset();
+      }
+
+      // Switch between login and register
+      function switchAuthMode() {
+        const title = document.getElementById("authTitle");
+        const submitBtn = document.getElementById("authSubmit");
+        const switchText = document.getElementById("authSwitchText");
+
+        if (isAuthMode === "login") {
+          isAuthMode = "register";
+          title.textContent = "Sign Up";
+          submitBtn.textContent = "Sign Up";
+          switchText.textContent = "Already have an account?";
+        } else {
+          isAuthMode = "login";
+          title.textContent = "Sign In";
+          submitBtn.textContent = "Sign In";
+          switchText.textContent = "Don't have an account?";
+        }
+      }
+
+      // Handle auth form submission
+      document
+        .getElementById("authForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const username = document.getElementById("authUsername").value;
+          const password = document.getElementById("authPassword").value;
+          const errorDiv = document.getElementById("authError");
+          const successDiv = document.getElementById("authSuccess");
+
+          errorDiv.textContent = "";
+          successDiv.textContent = "";
+
+          try {
+            let endpoint, body;
+
+            if (isAuthMode === "register") {
+              endpoint = `${API_BASE_URL}/register`;
+              body = new FormData();
+              body.append("username", username);
+              body.append("password", password);
+            } else {
+              endpoint = `${API_BASE_URL}/login`;
+              body = new FormData();
+              body.append("username", username);
+              body.append("password", password);
+            }
+
+            const response = await fetch(endpoint, {
+              method: "POST",
+              body: body,
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+
+              if (isAuthMode === "register") {
+                successDiv.textContent =
+                  "Registration successful! You can now sign in.";
+                setTimeout(() => {
+                  switchAuthMode();
+                  successDiv.textContent = "";
+                }, 2000);
+              } else {
+                localStorage.setItem("access_token", result.access_token);
+                currentUser = {
+                  token: result.access_token,
+                  username: username,
+                };
+                updateUIForLoggedInUser();
+                closeAuthModal();
+                loadUserCollections();
+              }
+            } else {
+              const error = await response.json();
+              errorDiv.textContent = error.detail || "Authentication failed";
+            }
+          } catch (error) {
+            console.error("Auth error:", error);
+            errorDiv.textContent = "Network error. Please try again.";
+          }
+        });
+
+      // Update UI for logged in user
+      function updateUIForLoggedInUser() {
+        document.getElementById("authBtn").style.display = "none";
+        document.getElementById("userInfo").classList.remove("hidden");
+        document.getElementById("username").textContent =
+          currentUser.username || "User";
+        document.getElementById("newCollectionBtn").classList.remove("hidden");
+        document.getElementById("loginMessage").style.display = "none";
+      }
+
+      // Logout
+      function logout() {
+        localStorage.removeItem("access_token");
+        currentUser = null;
+        currentMode = "single";
+        currentCollection = null;
+
+        document.getElementById("authBtn").style.display = "block";
+        document.getElementById("userInfo").classList.add("hidden");
+        document.getElementById("newCollectionBtn").classList.add("hidden");
+        document.getElementById("loginMessage").style.display = "block";
+
+        updatePDFList();
+        showWelcomeScreen();
+      }
+
+      // Show welcome screen
+      function showWelcomeScreen() {
+        document.getElementById("welcomeScreen").style.display = "flex";
+        document.getElementById("chatInterface").style.display = "none";
+      }
+
+      // Show new collection modal
+      function showNewCollectionModal() {
+        if (!currentUser) {
+          alert("Please login first");
+          return;
+        }
+        document.getElementById("collectionModal").style.display = "block";
+      }
+
+      // Close collection modal
+      function closeCollectionModal() {
+        document.getElementById("collectionModal").style.display = "none";
+        document.getElementById("collectionError").textContent = "";
+        document.getElementById("collectionSuccess").textContent = "";
+        document.getElementById("collectionForm").reset();
+      }
+
+      // Handle collection form submission
+      document
+        .getElementById("collectionForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const collectionName =
+            document.getElementById("collectionName").value;
+          const errorDiv = document.getElementById("collectionError");
+          const successDiv = document.getElementById("collectionSuccess");
+
+          errorDiv.textContent = "";
+          successDiv.textContent = "";
+
+          try {
+            const formData = new FormData();
+            formData.append("collection_name", collectionName);
+
+            const response = await fetch(`${API_BASE_URL}/create-collection/`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${currentUser.token}`,
+              },
+              body: formData,
+            });
+
+            if (response.ok) {
+              successDiv.textContent = "Collection created successfully!";
+              setTimeout(() => {
+                closeCollectionModal();
+                loadUserCollections();
+              }, 1000);
+            } else {
+              const error = await response.json();
+              errorDiv.textContent =
+                error.detail || "Failed to create collection";
+            }
+          } catch (error) {
+            console.error("Collection creation error:", error);
+            errorDiv.textContent = "Network error. Please try again.";
+          }
+        });
+
+      // Load user collections 
+      async function loadUserCollections() {
+        if (!currentUser) return;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/collections/`, {
+            headers: {
+              Authorization: `Bearer ${currentUser.token}`,
+            },
+          });
+
+          if (response.ok) {
+            const collections = await response.json();
+            updatePDFList(collections);
+          }
+        } catch (error) {
+          console.error("Load collections error:", error);
+        }
+      }
+
+      // Update PDF list
+      function updatePDFList(collections = []) {
+        const pdfList = document.getElementById("pdfList");
+        pdfList.innerHTML = "";
+
+        if (currentMode === "single" && currentPDF) {
+          const pdfItem = document.createElement("div");
+          pdfItem.className = "pdf-item active";
+          pdfItem.textContent = currentPDF;
+          pdfList.appendChild(pdfItem);
+        }
+
+        if (currentUser && collections.length > 0) {
+          collections.forEach((collection) => {
+            const collectionItem = document.createElement("div");
+            collectionItem.className = "collection-item";
+            if (collection.name === currentCollection) {
+              collectionItem.classList.add("active");
+            }
+            collectionItem.textContent = `📁 ${collection.name}`;
+            collectionItem.onclick = () => selectCollection(collection.name);
+            pdfList.appendChild(collectionItem);
+          });
+        }
+      }
+
+      // Select collection
+      function selectCollection(collectionName) {
+        currentCollection = collectionName;
+        currentMode = "multi";
+        updatePDFList();
+        showChatInterface();
+      }
+
+      // Show loading state
+      function showLoading() {
+        document.body.classList.add("loading");
+      }
+
+      // Hide loading state
+      function hideLoading() {
+        document.body.classList.remove("loading");
+      }
+    </script>
+  </body>
+</html>

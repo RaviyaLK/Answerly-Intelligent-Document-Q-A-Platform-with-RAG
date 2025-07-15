@@ -43,7 +43,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_user(username: str):
-    # Ensure 'users' collection exists (Mongo creates it on first insert)
+    
     if not users_collection.find_one({"username": username}):
         return None
     return users_collection.find_one({"username": username})

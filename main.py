@@ -21,7 +21,7 @@ from embedding.embed_store import (
     load_embeddings_from_mongodb    
 )
 from rag.qa_pipeline import generate_answer, retrieve_context_single, retrieve_context_multi
-from db.db import create_collection_for_user
+from db.db import create_collection_for_user,pdf_embeddings_collection
 from fastapi.security import OAuth2PasswordRequestForm
 from snowflake.snowflake_utils import log_query_response
 import os
@@ -132,3 +132,11 @@ def ask_question(data: QARequest, current_user: dict = Depends(get_current_user)
 
     
     return {"answer": answer}
+@app.get("/collections/")
+def get_user_collections(current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+
+    # Get unique collection names for this user
+    collections = pdf_embeddings_collection.distinct("collection_name", {"user_id": user_id})
+
+    return [{"name": name} for name in collections]

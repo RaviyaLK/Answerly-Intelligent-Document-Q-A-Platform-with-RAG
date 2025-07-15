@@ -2,3 +2,5 @@
 .env
 backend/temp
 temp.pdf
+*__pycache__
+temp
