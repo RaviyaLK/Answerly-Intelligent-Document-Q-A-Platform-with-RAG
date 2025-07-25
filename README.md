@@ -58,7 +58,7 @@ Answerly is an intelligent, fast, and extensible **PDF Chat Assistant** powered 
 
 ## 📂 Folder Structure
 
-```bash
+
 answerly/
 ├── main.py                  # FastAPI main app
 ├── auth/
@@ -118,3 +118,12 @@ SNOWFLAKE_WAREHOUSE=your_warehouse
 ## 6. Test with the frontend
 cd static
 open index.html  # or use a Live Server browser extension
+
+
+---
+
+## 👨‍💻 Author
+
+Developed by [Ravindu Wijesekara](https://github.com/RaviyaLK) — Final Year SE Undergrad | AI + Backend Enthusiast
+
+---
